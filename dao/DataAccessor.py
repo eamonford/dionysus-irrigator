@@ -32,8 +32,6 @@ class DataAccessor(object):
         finally:
             cursor.close()
 
-
-
     def getById(self, id):
         cursor = self.connection.cursor()
         try:

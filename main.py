@@ -14,6 +14,11 @@ pgConnection = Config.Configuration().getDatabaseConnection()
 ruleDao = RuleDataAccessor(pgConnection)
 sensorDao = SensorDataAccessor(pgConnection)
 
+def executeMoistureRule(rule, value):
+    if value < rule['threshold']:
+        sensor = rule['sensor']
+        Logger.info(str(sensor['device_id']) + " NEEDS TO BE WATERED")
+
 def on_connect(client, userdata, flags, rc):
     Logger.info("Connected to mosquitto")
 
@@ -22,9 +27,9 @@ def on_message(client, userdata, msg):
         sensorId = messageDict['id']
         rules = ruleDao.getBySensorId(sensorId)
         for rule in rules:
-            rule['sensor'] = sensorDao.getById(sensorId)
-
-        print rules
+            rule['sensor'] = sensorDao.getById(sensorId)[0]
+            if rule['type'] == 'moisture':
+                executeMoistureRule(rule, messageDict['value'])
 
 def main():
     mqttClient = mqtt.Client()
