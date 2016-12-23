@@ -1,4 +1,3 @@
-from influxdb import InfluxDBClient
 from dao.RuleDataAccessor import RuleDataAccessor
 from dao.SensorDataAccessor import SensorDataAccessor
 import json
@@ -20,7 +19,7 @@ def executeMoistureRule(rule, value):
         Logger.info(str(sensor['device_id']) + " NEEDS TO BE WATERED")
 
 def on_connect(client, userdata, flags, rc):
-    Logger.info("Connected to mosquitto")
+    Logger.info("Connected to mosquitto at " + Config.Configuration().mqttHost)
 
 def on_message(client, userdata, msg):
         messageDict = json.loads(str(msg.payload))

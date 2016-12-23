@@ -5,6 +5,11 @@ import time
 import getopt
 import logging
 
+
+logging.basicConfig()
+Logger = logging.getLogger(__name__)
+Logger.setLevel(20)
+
 class Borg:
 	_shared_state = {}
 	def __init__(self):
@@ -21,11 +26,13 @@ class Configuration(Borg):
 
 	def getDatabaseConnection(self):
 		try:
-			return psycopg2.connect(
+			connection = psycopg2.connect(
 			host=self.pgHost,
 			database=self.pgDatabase,
 			user=self.pgUser,
 			password=self.pgPass)
+			Logger.info("Connected to Postgres host " + self.pgHost)
+			return connection
 		except:
-			logging.error("Unable to connect to Postgres.")
+			Logger.error("Unable to connect to Postgres at " + self.pgHost)
 			raise
