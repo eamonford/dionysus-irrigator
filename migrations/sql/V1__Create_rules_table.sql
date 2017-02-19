@@ -1,4 +1,4 @@
-CREATE TABLE rules(
+ CREATE TABLE rules(
 	id SERIAL NOT NULL,
     sensor_id TEXT,
     type TEXT,
