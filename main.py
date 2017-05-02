@@ -23,10 +23,10 @@ def generateIrrigationCommandJson(valveId, secondsToWater):
 def executeMoistureRule(rule, value, sparkClient):
     if value < rule['threshold']:
         sensor = rule['sensor']
-        Logger.info(str(sensor['device_id']) + " NEEDS TO BE WATERED")
+        Logger.info(str("Will attempt to irrigate " + sensor['device_id']))
         commandJson = generateIrrigationCommandJson(rule['valve_id'], 5)
-        print("Sending command: " + commandJson)
         result = sparkClient.devices[IRRIGATOR_MASTER].execute(commandJson)
+        Logger.info(str("Successfully irrigated " + sensor['device_id']))
 
 
 def on_connect(client, userdata, flags, rc):
@@ -43,7 +43,7 @@ def on_message(mqttClient, sparkClient, msg):
                     executeMoistureRule(rule, messageDict['value'], sparkClient)
                 except Exception as e:
                     Logger.exception("Could not contact irrigator " + IRRIGATOR_MASTER + ". The irrigator may be offline.")
-    
+
 def main():
     sparkClient = SparkCloud(ACCESS_TOKEN)
     mqttClient = mqtt.Client(userdata = sparkClient)
