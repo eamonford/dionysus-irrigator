@@ -39,8 +39,11 @@ def on_message(mqttClient, sparkClient, msg):
         for rule in rules:
             rule['sensor'] = sensorDao.getById(sensorId)[0]
             if rule['type'] == 'moisture':
-                executeMoistureRule(rule, messageDict['value'], sparkClient)
-
+                try:
+                    executeMoistureRule(rule, messageDict['value'], sparkClient)
+                except Exception as e:
+                    Logger.exception("Could not contact irrigator " + IRRIGATOR_MASTER + ". The irrigator may be offline.")
+    
 def main():
     sparkClient = SparkCloud(ACCESS_TOKEN)
     mqttClient = mqtt.Client(userdata = sparkClient)
