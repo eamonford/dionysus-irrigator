@@ -5,7 +5,6 @@ import paho.mqtt.client as mqtt
 import Config
 import logging
 
-IRRIGATOR_MASTER = "dozen_laser"
 ACCESS_TOKEN = 'a520cd5bd34112b273fda91b1164f011b81fd2de'
 SECONDS_TO_WATER = 5
 
@@ -17,6 +16,9 @@ pgConnection = Config.Configuration().getDatabaseConnection()
 ruleDao = RuleDataAccessor(pgConnection)
 sensorDao = SensorDataAccessor(pgConnection)
 
+irrigatorMaster = Config.Configuration().irrigatorMaster
+topic = "dionysus/" + irrigatorMaster
+
 def generateIrrigationCommandJson(valveId, secondsToWater):
     return "{\"i\": [{\"id\": " + str(valveId) + ", \"d\": " + str(secondsToWater) + "}]}"
 
@@ -25,8 +27,8 @@ def executeMoistureRule(rule, value, mqttClient):
         sensor = rule['sensor']
         Logger.info(str("Will attempt to irrigate " + sensor['device_id']))
         commandJson = generateIrrigationCommandJson(rule['valve_id'], SECONDS_TO_WATER)
-        mqttClient.publish("dionysus/" + IRRIGATOR_MASTER, commandJson)
-        Logger.info(str("Sent irrigation command to " + IRRIGATOR_MASTER))
+        mqttClient.publish(topic, commandJson)
+        Logger.info(str("Sent irrigation command to MQTT topic " + topic))
 
 
 def on_connect(client, userdata, flags, rc):
@@ -42,7 +44,7 @@ def on_message(mqttClient, userdata, msg):
                 try:
                     executeMoistureRule(rule, messageDict['value'], mqttClient)
                 except Exception as e:
-                    Logger.exception("Could not contact irrigator " + IRRIGATOR_MASTER + ". The irrigator may be offline.")
+                    Logger.exception("There was a problem sending the irrigation command to MQTT topic " + topic)
 
 def main():
     mqttClient = mqtt.Client()

@@ -23,6 +23,7 @@ class Configuration(Borg):
 		self.pgUser = os.getenv('PG_USER', 'admin')
 		self.pgPass = os.getenv('PG_PASS', 'password')
 		self.pgDatabase = os.getenv('PG_DATABASE', 'database')
+		self.irrigatorMaster = os.getenv('IRRIGATOR_MASTER', '')
 
 	def getDatabaseConnection(self):
 		try:
