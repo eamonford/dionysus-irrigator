@@ -4,10 +4,10 @@ import json
 import paho.mqtt.client as mqtt
 import Config
 import logging
-from spyrk import SparkCloud
 
 IRRIGATOR_MASTER = "dozen_laser"
 ACCESS_TOKEN = 'a520cd5bd34112b273fda91b1164f011b81fd2de'
+SECONDS_TO_WATER = 5
 
 logging.basicConfig()
 Logger = logging.getLogger(__name__)
@@ -20,19 +20,19 @@ sensorDao = SensorDataAccessor(pgConnection)
 def generateIrrigationCommandJson(valveId, secondsToWater):
     return "{\"i\": [{\"id\": " + str(valveId) + ", \"d\": " + str(secondsToWater) + "}]}"
 
-def executeMoistureRule(rule, value, sparkClient):
+def executeMoistureRule(rule, value, mqttClient):
     if value < rule['threshold']:
         sensor = rule['sensor']
         Logger.info(str("Will attempt to irrigate " + sensor['device_id']))
-        commandJson = generateIrrigationCommandJson(rule['valve_id'], 5)
-        result = sparkClient.devices[IRRIGATOR_MASTER].execute(commandJson)
-        Logger.info(str("Successfully irrigated " + sensor['device_id']))
+        commandJson = generateIrrigationCommandJson(rule['valve_id'], SECONDS_TO_WATER)
+        mqttClient.publish("dionysus/" + IRRIGATOR_MASTER, commandJson)
+        Logger.info(str("Sent irrigation command to " + IRRIGATOR_MASTER))
 
 
 def on_connect(client, userdata, flags, rc):
     Logger.info("Connected to mosquitto at " + Config.Configuration().mqttHost)
 
-def on_message(mqttClient, sparkClient, msg):
+def on_message(mqttClient, userdata, msg):
         messageDict = json.loads(str(msg.payload))
         sensorId = messageDict['id']
         rules = ruleDao.getBySensorId(sensorId)
@@ -40,13 +40,12 @@ def on_message(mqttClient, sparkClient, msg):
             rule['sensor'] = sensorDao.getById(sensorId)[0]
             if rule['type'] == 'moisture':
                 try:
-                    executeMoistureRule(rule, messageDict['value'], sparkClient)
+                    executeMoistureRule(rule, messageDict['value'], mqttClient)
                 except Exception as e:
                     Logger.exception("Could not contact irrigator " + IRRIGATOR_MASTER + ". The irrigator may be offline.")
 
 def main():
-    sparkClient = SparkCloud(ACCESS_TOKEN)
-    mqttClient = mqtt.Client(userdata = sparkClient)
+    mqttClient = mqtt.Client()
     mqttClient.on_connect = on_connect
     mqttClient.on_message = on_message
     mqttClient.connect(Config.Configuration().mqttHost, 1883, 60)
